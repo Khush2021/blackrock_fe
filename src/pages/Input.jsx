@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Input = () => {
   const [asset, setAsset] = useState("");
@@ -6,8 +7,49 @@ const Input = () => {
   const [selections, setSelections] = useState([]);
   const [step, setStep] = useState(1);
   const [editingIndex, setEditingIndex] = useState(null);
+  const [selectedState, setSelectedState] = useState("");
 
-  const availableAssets = ["gold", "silver", "real-estate"];
+  const navigate = useNavigate();
+  const availableAssets = ["gold", "silver", "real-estate", "cash"];
+
+  const goldStates = [
+    "Uttar Pradesh",
+    "Andhra Pradesh",
+    "Arunachal Pradesh",
+    "Assam",
+    "Bihar",
+    "Chandigarh",
+    "Chhattisgarh",
+    "Dadra and Nagar Haveli",
+    "Daman and Diu",
+    "Delhi",
+    "Goa",
+    "Gujarat",
+    "Haryana",
+    "Himachal Pradesh",
+    "Jammu and Kashmir",
+    "Jharkhand",
+    "Karnataka",
+    "Kerala",
+    "Lakshadweep",
+    "Madhya Pradesh",
+    "Maharashtra",
+    "Manipur",
+    "Meghalaya",
+    "Mizoram",
+    "Nagaland",
+    "Odisha",
+    "Puducherry",
+    "Punjab",
+    "Rajasthan",
+    "Sikkim",
+    "Tamil Nadu",
+    "Telangana",
+    "Tripura",
+    "Uttarakhand",
+    "West Bengal",
+  ];
+
   const remainingAssets = availableAssets.filter(
     (availableAsset) =>
       !selections.some((selection) => selection.asset === availableAsset)
@@ -22,29 +64,36 @@ const Input = () => {
     setAmount(e.target.value);
   };
 
+  const handleStateChange = (e) => {
+    setSelectedState(e.target.value);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Check if the amount is a positive number
-    if (amount <= 0) {
+    if (parseFloat(amount) <= 0) {
       alert("Amount must be greater than zero.");
       return;
     }
+    const newSelection = { asset, amount, state: selectedState };
     if (editingIndex !== null) {
       const updatedSelections = [...selections];
-      updatedSelections[editingIndex] = { asset, amount };
+      updatedSelections[editingIndex] = newSelection;
       setSelections(updatedSelections);
       setEditingIndex(null);
     } else {
-      setSelections([...selections, { asset, amount }]);
+      setSelections([...selections, newSelection]);
     }
     setAsset("");
     setAmount("");
+    setSelectedState("");
     setStep(1);
   };
 
   const handleEdit = (index) => {
-    setAsset(selections[index].asset);
-    setAmount(selections[index].amount);
+    const selection = selections[index];
+    setAsset(selection.asset);
+    setAmount(selection.amount);
+    setSelectedState(selection.state || "");
     setEditingIndex(index);
     setStep(2);
   };
@@ -52,6 +101,10 @@ const Input = () => {
   const handleDelete = (index) => {
     const updatedSelections = selections.filter((_, i) => i !== index);
     setSelections(updatedSelections);
+  };
+
+  const handleAnalyze = () => {
+    navigate("/analyse", { state: { assets: selections } });
   };
 
   return (
@@ -85,14 +138,36 @@ const Input = () => {
               </select>
             </div>
           )}
+          {step === 2 && asset === "gold" && (
+            <div className="mb-4">
+              <label
+                htmlFor="state-select"
+                className="block text-gray-800 text-sm font-bold mb-2"
+              >
+                Select State
+              </label>
+              <select
+                id="state-select"
+                value={selectedState}
+                onChange={handleStateChange}
+                className="block appearance-none w-full bg-gray-100 border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
+              >
+                <option value="">Select a state</option>
+                {goldStates.map((state) => (
+                  <option key={state} value={state}>
+                    {state}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           {step === 2 && (
             <div className="mb-4">
               <label
                 htmlFor="amount"
                 className="block text-gray-800 text-sm font-bold mb-2"
               >
-                Enter Amount (
-                {asset === "gold" || asset === "silver" ? "kg" : "units"})
+                Enter Amount ({getUnitType(asset)})
               </label>
               <input
                 type="number"
@@ -111,7 +186,12 @@ const Input = () => {
             {editingIndex !== null ? "Update Asset" : "Add Asset"}
           </button>
         </form>
-
+        <button
+          className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          onClick={handleAnalyze}
+        >
+          Analyze Assets
+        </button>
         <div className="bg-white p-6 rounded shadow-lg">
           <h2 className="text-gray-800 text-lg font-bold mb-2">
             Selected Assets
@@ -125,11 +205,9 @@ const Input = () => {
                 >
                   <div>
                     {selection.asset.charAt(0).toUpperCase() +
-                      selection.asset.slice(1)}
-                    : {selection.amount}{" "}
-                    {selection.asset === "gold" || selection.asset === "silver"
-                      ? "kg"
-                      : "units"}
+                      selection.asset.slice(1)}{" "}
+                    : {selection.amount} {getUnitType(selection.asset)}{" "}
+                    {selection.state ? `(${selection.state})` : ""}
                   </div>
                   <div>
                     <button
@@ -156,5 +234,12 @@ const Input = () => {
     </div>
   );
 };
+
+function getUnitType(asset) {
+  if (asset === "gold") return "grams";
+  if (asset === "real-estate") return "units";
+  if (asset === "cash") return "INR";
+  return "";
+}
 
 export default Input;
