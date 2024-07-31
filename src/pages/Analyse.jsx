@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { assetInfo, tooltipContent } from "./assetInfo";
 import { adviceMap } from "./investmentAdvice";
-import { cityPrices } from "./info"; // Import the real estate data
+import { cityPrices } from "./info";
 
 const Analyse = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { assets } = location.state;
   console.log(assets);
   const [goldRates, setGoldRates] = useState(null);
@@ -68,12 +69,12 @@ const Analyse = () => {
 
   const calculateGoldValue = (amount, rate) => {
     if (rate === "Loading..." || rate === "N/A") return rate;
-    const valuePerGram = rate / 10; // Convert 10g rate to 1g rate
+    const valuePerGram = rate / 10;
     return (amount * valuePerGram).toFixed(2);
   };
 
   const calculateReturns = (amount, returnRate) => {
-    const returns = (amount * returnRate) / 100; // Calculates the return based on the rate
+    const returns = (amount * returnRate) / 100;
     return returns.toFixed(2);
   };
 
@@ -152,7 +153,6 @@ const Analyse = () => {
     getInvestmentAdvice();
   }, [risk, liquidity]);
 
-  // Add real estate calculation functions
   const getRealEstateData = (city) => {
     return cityPrices.find(
       (data) => data.city.toLowerCase() === city.toLowerCase()
@@ -175,6 +175,44 @@ const Analyse = () => {
     return amount.toFixed(2);
   };
 
+  const adjustRiskOrLiquidity = (type, direction) => {
+    if (type === "risk") {
+      if (direction === "decrease" && risk !== "low") {
+        setRisk(risk === "high" ? "medium" : "low");
+      }
+    } else if (type === "liquidity") {
+      if (direction === "increase" && liquidity !== "very-high") {
+        setLiquidity(
+          liquidity === "low"
+            ? "medium"
+            : liquidity === "medium"
+            ? "high"
+            : "very-high"
+        );
+      }
+    }
+  };
+
+  const navigateToComparison = (currentAsset, suggestedAsset) => {
+    navigate("/comparison", {
+      state: {
+        currentAsset,
+        suggestedAsset,
+      },
+    });
+  };
+
+  const suggestComparisonAsset = (asset) => {
+    const currentAssetInfo = assetInfo[asset.asset];
+    const suggestedAsset = investmentOptions.find(
+      (option) =>
+        (option.liquidity === "high" || option.liquidity === "very-high") &&
+        (option.risk === "low" ||
+          (currentAssetInfo.risk === "high" && option.risk === "medium"))
+    );
+    return suggestedAsset;
+  };
+
   return (
     <div className="analysis-container p-6">
       <h1 className="text-3xl font-bold mb-6">Asset Analysis</h1>
@@ -187,6 +225,7 @@ const Analyse = () => {
             <ul>
               {assets.map((asset, index) => {
                 const isExpanded = expandedAssets[index];
+                const suggestedAsset = suggestComparisonAsset(asset);
                 const realEstateData =
                   asset.asset === "real-estate"
                     ? getRealEstateData(asset.city)
@@ -280,7 +319,7 @@ const Analyse = () => {
                             asset.elapsedTime,
                             1
                           )}
-                        </p>{" "}
+                        </p>
                         <p>
                           Final Amount: ₹
                           {calculateCompoundInterest(
@@ -325,6 +364,14 @@ const Analyse = () => {
                     <p className="mt-2 text-sm text-gray-600">
                       {assetInfo[asset.asset]?.details}
                     </p>
+                    <button
+                      onClick={() =>
+                        navigateToComparison(asset, suggestedAsset)
+                      }
+                      className="mt-2 p-2 bg-blue-500 text-white rounded-md"
+                    >
+                      Compare with {suggestedAsset.name}
+                    </button>
                   </li>
                 );
               })}
@@ -343,38 +390,60 @@ const Analyse = () => {
               <label htmlFor="risk" className="mb-2 text-gray-700">
                 Select your risk tolerance:
               </label>
-              <select
-                id="risk"
-                value={risk}
-                onChange={(e) => setRisk(e.target.value)}
-                className="p-2 border border-gray-300 rounded-md"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
+              <div className="flex items-center">
+                <select
+                  id="risk"
+                  value={risk}
+                  onChange={(e) => setRisk(e.target.value)}
+                  className="p-2 border border-gray-300 rounded-md mr-2"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+                {risk !== "low" && (
+                  <button
+                    onClick={() => adjustRiskOrLiquidity("risk", "decrease")}
+                    className="p-2 bg-blue-500 text-white rounded-md"
+                  >
+                    Lower Risk
+                  </button>
+                )}
+              </div>
             </div>
             <div className="flex flex-col mb-4">
               <label htmlFor="liquidity" className="mb-2 text-gray-700">
                 Select your liquidity preference:
               </label>
-              <select
-                id="liquidity"
-                value={liquidity}
-                onChange={(e) => setLiquidity(e.target.value)}
-                className="p-2 border border-gray-300 rounded-md"
-              >
-                <option value="very-high">Very High</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
+              <div className="flex items-center">
+                <select
+                  id="liquidity"
+                  value={liquidity}
+                  onChange={(e) => setLiquidity(e.target.value)}
+                  className="p-2 border border-gray-300 rounded-md mr-2"
+                >
+                  <option value="very-high">Very High</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+                {liquidity !== "very-high" && (
+                  <button
+                    onClick={() =>
+                      adjustRiskOrLiquidity("liquidity", "increase")
+                    }
+                    className="p-2 bg-blue-500 text-white rounded-md"
+                  >
+                    Increase Liquidity
+                  </button>
+                )}
+              </div>
             </div>
             <button
-              onClick={getInvestmentAdvice}
-              className="mt-4 p-2 bg-blue-500 text-white rounded-md"
+              onClick={navigateToComparison}
+              className="mt-4 p-2 bg-green-500 text-white rounded-md"
             >
-              Get Investment Advice
+              Compare Investments
             </button>
             <div id="advice" className="mt-4 text-lg text-gray-800">
               {advice}
@@ -388,8 +457,8 @@ const Analyse = () => {
 
 function getUnitType(asset) {
   if (asset === "gold") return "grams";
-  if (asset === "real-estate") return "units";
-  if (asset === "cash") return "INR";
+  if (asset === "real-estate") return "sq. feet";
+  if (asset === "cash" || asset === "fixed-deposit") return "INR";
   return "";
 }
 
