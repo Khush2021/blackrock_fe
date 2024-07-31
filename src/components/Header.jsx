@@ -7,7 +7,9 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div className="flex-shrink-0 flex items-center">
-            <h1 className="text-xl font-bold">BlackRock</h1>
+            <h1 className="text-xl font-bold">
+              <Link to="/">BlackRock</Link>
+            </h1>
           </div>
           <div className="hidden sm:flex sm:items-center sm:space-x-4">
             <Link
