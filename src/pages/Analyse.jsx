@@ -8,6 +8,7 @@ import { cityPrices } from "./info"; // Import the real estate data
 const Analyse = () => {
   const location = useLocation();
   const { assets } = location.state;
+  console.log(assets);
   const [goldRates, setGoldRates] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [risk, setRisk] = useState("medium");
@@ -69,6 +70,11 @@ const Analyse = () => {
     if (rate === "Loading..." || rate === "N/A") return rate;
     const valuePerGram = rate / 10; // Convert 10g rate to 1g rate
     return (amount * valuePerGram).toFixed(2);
+  };
+
+  const calculateReturns = (amount, returnRate) => {
+    const returns = (amount * returnRate) / 100; // Calculates the return based on the rate
+    return returns.toFixed(2);
   };
 
   const getInvestmentAdvice = () => {
@@ -157,6 +163,18 @@ const Analyse = () => {
     return (sqFeet * avgPrice).toFixed(2);
   };
 
+  const calculateCompoundInterest = (
+    principal,
+    rate,
+    time,
+    compoundsPerYear
+  ) => {
+    const amount =
+      principal *
+      Math.pow(1 + rate / 100 / compoundsPerYear, compoundsPerYear * time);
+    return amount.toFixed(2);
+  };
+
   return (
     <div className="analysis-container p-6">
       <h1 className="text-3xl font-bold mb-6">Asset Analysis</h1>
@@ -215,6 +233,61 @@ const Analyse = () => {
                           {calculateGoldValue(
                             asset.amount,
                             getGoldRate(asset.state)
+                          )}
+                        </p>
+                        <p>
+                          Returns (8%): ₹
+                          {calculateReturns(
+                            calculateGoldValue(
+                              asset.amount,
+                              getGoldRate(asset.state)
+                            ),
+                            8
+                          )}
+                        </p>
+                        <p>
+                          Total with Returns: ₹
+                          {(
+                            parseFloat(
+                              calculateGoldValue(
+                                asset.amount,
+                                getGoldRate(asset.state)
+                              )
+                            ) +
+                            parseFloat(
+                              calculateReturns(
+                                calculateGoldValue(
+                                  asset.amount,
+                                  getGoldRate(asset.state)
+                                ),
+                                8
+                              )
+                            )
+                          ).toFixed(2)}
+                        </p>
+                      </>
+                    )}
+                    {asset.asset === "fixed-deposit" && (
+                      <>
+                        <p>Principal Amount: ₹{asset.amount}</p>
+                        <p>Total Time: {asset.totalTime} years</p>
+                        <p>Elapsed Time: {asset.elapsedTime} years</p>
+                        <p>
+                          Current Amount: ₹
+                          {calculateCompoundInterest(
+                            asset.amount,
+                            6.5,
+                            asset.elapsedTime,
+                            1
+                          )}
+                        </p>{" "}
+                        <p>
+                          Final Amount: ₹
+                          {calculateCompoundInterest(
+                            asset.amount,
+                            6.5,
+                            asset.totalTime,
+                            1
                           )}
                         </p>
                       </>
