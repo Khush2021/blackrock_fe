@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
-import { assetInfo, tooltipContent } from "./assetInfo"; // Adjust the path as necessary
-import { adviceMap } from "./investmentAdvice"; // Adjust the path as necessary
+import { assetInfo, tooltipContent } from "./assetInfo";
+import { adviceMap } from "./investmentAdvice";
+import { cityPrices } from "./info"; // Import the real estate data
 
 const Analyse = () => {
   const location = useLocation();
@@ -140,9 +141,21 @@ const Analyse = () => {
       position: { top: 0, left: 0 },
     });
   };
+
   useEffect(() => {
     getInvestmentAdvice();
   }, [risk, liquidity]);
+
+  // Add real estate calculation functions
+  const getRealEstateData = (city) => {
+    return cityPrices.find(
+      (data) => data.city.toLowerCase() === city.toLowerCase()
+    );
+  };
+
+  const calculateRealEstateValue = (sqFeet, avgPrice) => {
+    return (sqFeet * avgPrice).toFixed(2);
+  };
 
   return (
     <div className="analysis-container p-6">
@@ -156,6 +169,25 @@ const Analyse = () => {
             <ul>
               {assets.map((asset, index) => {
                 const isExpanded = expandedAssets[index];
+                const realEstateData =
+                  asset.asset === "real-estate"
+                    ? getRealEstateData(asset.city)
+                    : null;
+                const realEstateValue = realEstateData
+                  ? calculateRealEstateValue(
+                      asset.area,
+                      realEstateData.avgPrice2023
+                    )
+                  : null;
+                const realEstateReturn = realEstateData
+                  ? (
+                      realEstateValue -
+                      asset.area *
+                        (realEstateData.avgPrice2023 /
+                          (1 + realEstateData.priceChange2023vs2021 / 100))
+                    ).toFixed(2)
+                  : null;
+
                 return (
                   <li
                     key={index}
@@ -168,9 +200,11 @@ const Analyse = () => {
                       {asset.asset.charAt(0).toUpperCase() +
                         asset.asset.slice(1)}
                     </h3>
-                    <p>
-                      Amount: {asset.amount} {getUnitType(asset.asset)}
-                    </p>
+                    {!realEstateData && (
+                      <p>
+                        Amount: {asset.amount} {getUnitType(asset.asset)}
+                      </p>
+                    )}
                     {asset.asset === "gold" && asset.state && (
                       <>
                         <p>
@@ -183,6 +217,17 @@ const Analyse = () => {
                             getGoldRate(asset.state)
                           )}
                         </p>
+                      </>
+                    )}
+                    {asset.asset === "real-estate" && realEstateData && (
+                      <>
+                        <p>City: {asset.city}</p>
+                        <p>Area: {asset.area} sq. feet</p>
+                        <p>
+                          Average Price: ₹{realEstateData.avgPrice2023}/sq. feet
+                        </p>
+                        <p>Value: ₹{realEstateValue}</p>
+                        <p>Return since 2021: ₹{realEstateReturn}</p>
                       </>
                     )}
                     <p
