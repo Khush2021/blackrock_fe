@@ -40,7 +40,8 @@ const Analyse = () => {
         method: "GET",
         url: "https://gold-rates-india.p.rapidapi.com/api/state-gold-rates",
         headers: {
-          "x-rapidapi-key": "YOUR_RAPIDAPI_KEY",
+          "x-rapidapi-key":
+            "3b2f3bb2f2mshacc988a129740c4p1745f6jsne359937f139a",
           "x-rapidapi-host": "gold-rates-india.p.rapidapi.com",
         },
       };
@@ -202,15 +203,40 @@ const Analyse = () => {
     });
   };
 
-  const suggestComparisonAsset = (asset) => {
+  const suggestComparisonAsset = (asset, comparisonType) => {
     const currentAssetInfo = assetInfo[asset.asset];
-    const suggestedAsset = investmentOptions.find(
-      (option) =>
-        (option.liquidity === "high" || option.liquidity === "very-high") &&
-        (option.risk === "low" ||
-          (currentAssetInfo.risk === "high" && option.risk === "medium"))
+    // Filter out 'Cash and Cash Equivalents' unless it's the only option
+    const filteredOptions = investmentOptions.filter(
+      (option) => option.name !== "Cash"
     );
+
+    // Find asset with contrasting property based on comparison type
+    let suggestedAsset = filteredOptions.find((option) => {
+      if (comparisonType === "liquidity") {
+        return currentAssetInfo.liquidity !== option.liquidity;
+      } else {
+        return currentAssetInfo.risk !== option.risk;
+      }
+    });
+
+    // If no suitable asset found in filtered options, consider cash if necessary
+    if (!suggestedAsset) {
+      suggestedAsset = investmentOptions.find(
+        (option) => option.name === "Cash"
+      );
+    }
+
     return suggestedAsset;
+  };
+
+  const handleComparisonClick = (currentAsset, comparisonType) => {
+    const suggestedAsset = suggestComparisonAsset(currentAsset, comparisonType);
+    navigate("/comparison", {
+      state: {
+        currentAsset,
+        suggestedAsset,
+      },
+    });
   };
 
   return (
@@ -364,14 +390,22 @@ const Analyse = () => {
                     <p className="mt-2 text-sm text-gray-600">
                       {assetInfo[asset.asset]?.details}
                     </p>
-                    <button
-                      onClick={() =>
-                        navigateToComparison(asset, suggestedAsset)
-                      }
-                      className="mt-2 p-2 bg-blue-500 text-white rounded-md"
-                    >
-                      Compare with {suggestedAsset.name}
-                    </button>
+                    <div className="flex space-x-4 mt-4">
+                      <button
+                        onClick={() =>
+                          handleComparisonClick(asset, "liquidity")
+                        }
+                        className="p-2 bg-blue-500 text-white rounded-md"
+                      >
+                        Compare Liquidity
+                      </button>
+                      <button
+                        onClick={() => handleComparisonClick(asset, "risk")}
+                        className="p-2 bg-green-500 text-white rounded-md"
+                      >
+                        Compare Risk
+                      </button>
+                    </div>
                   </li>
                 );
               })}

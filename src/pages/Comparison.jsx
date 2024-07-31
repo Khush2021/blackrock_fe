@@ -1,42 +1,97 @@
-// Comparison.js
-import React from "react";
-import { useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { assetInfo } from "./assetInfo";
 
 const Comparison = () => {
   const location = useLocation();
-  const { currentAsset, suggestedAsset } = location.state;
+  const navigate = useNavigate();
+  const { currentAsset } = location.state;
+
+  const [suggestedAsset, setSuggestedAsset] = useState(null);
+
+  useEffect(() => {
+    const findSuitableAsset = () => {
+      const excludedAssets = ["cash", "gold", "real-estate"]; // Lowercase to match assetInfo keys
+      const preferredAssets = [
+        "stocks",
+        "fixed-deposit",
+        "bonds",
+        "mutual-funds",
+      ]; // Extend this list as needed
+
+      // Filter assets to include only preferred assets that are not excluded
+      const eligibleAssets = Object.keys(assetInfo).filter(
+        (key) => !excludedAssets.includes(key) && preferredAssets.includes(key)
+      );
+
+      let suggestion = null;
+      // Find the first eligible asset that contrasts with the current asset's liquidity and risk
+      for (const key of eligibleAssets) {
+        if (
+          assetInfo[key].liquidity !==
+            assetInfo[currentAsset.asset].liquidity ||
+          assetInfo[key].risk !== assetInfo[currentAsset.asset].risk
+        ) {
+          suggestion = { ...assetInfo[key], name: key };
+          break;
+        }
+      }
+
+      // Fallback if no preferred and eligible asset is found
+      if (!suggestion && eligibleAssets.length) {
+        suggestion = {
+          ...assetInfo[eligibleAssets[0]],
+          name: eligibleAssets[0],
+        };
+      }
+
+      setSuggestedAsset(suggestion);
+    };
+
+    findSuitableAsset();
+  }, [currentAsset.asset]);
+
+  if (!suggestedAsset)
+    return <div className="text-center mt-5">Loading suggestions...</div>;
 
   const calculateFutureValue = (amount, rate, years) => {
     return (amount * Math.pow(1 + rate / 100, years)).toFixed(2);
   };
 
+  if (!suggestedAsset)
+    return (
+      <div className="text-center mt-5">
+        No suitable asset found for comparison.
+      </div>
+    );
+
   const currentAssetFutureValue = calculateFutureValue(
     currentAsset.amount,
-    8,
-    5
-  ); // Assuming 8% return for 5 years
+    currentAsset.returnRate, // Ensure currentAsset includes returnRate
+    5 // Number of years to project
+  );
+
   const suggestedAssetFutureValue = calculateFutureValue(
     currentAsset.amount,
-    6,
-    5
-  ); // Assuming 6% return for 5 years
+    suggestedAsset.returnRate, // Ensure suggestedAsset includes returnRate
+    5 // Number of years to project
+  );
 
   return (
-    <div className="comparison-container p-6">
-      <h1 className="text-3xl font-bold mb-6">Asset Comparison</h1>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="current-asset">
-          <h2 className="text-2xl font-semibold mb-4">
-            Your Asset: {currentAsset.asset}
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold text-center mb-6">Asset Comparison</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="asset-info p-4 bg-gray-100 rounded-lg shadow">
+          <h2 className="text-lg font-semibold">
+            Your Asset: {currentAsset.name}
           </h2>
           <p>Current Value: ₹{currentAsset.amount}</p>
           <p>Liquidity: {assetInfo[currentAsset.asset].liquidity}</p>
           <p>Risk: {assetInfo[currentAsset.asset].risk}</p>
           <p>Estimated Value after 5 years: ₹{currentAssetFutureValue}</p>
         </div>
-        <div className="suggested-asset">
-          <h2 className="text-2xl font-semibold mb-4">
+        <div className="asset-info p-4 bg-gray-100 rounded-lg shadow">
+          <h2 className="text-lg font-semibold">
             Suggested Asset: {suggestedAsset.name}
           </h2>
           <p>Current Value: ₹{currentAsset.amount}</p>
@@ -45,27 +100,16 @@ const Comparison = () => {
           <p>Estimated Value after 5 years: ₹{suggestedAssetFutureValue}</p>
         </div>
       </div>
-      <div className="mt-6">
-        <h3 className="text-xl font-semibold mb-2">Comparison Analysis</h3>
-        <p>
-          Your {currentAsset.asset} has{" "}
-          {assetInfo[currentAsset.asset].liquidity} liquidity and{" "}
-          {assetInfo[currentAsset.asset].risk} risk, while {suggestedAsset.name}{" "}
-          offers {suggestedAsset.liquidity} liquidity and {suggestedAsset.risk}{" "}
-          risk.
-        </p>
-        <p className="mt-2">
-          If you invest ₹{currentAsset.amount} in each for 5 years:
-          <br />- Your {currentAsset.asset} might grow to ₹
-          {currentAssetFutureValue}
-          <br />- The same amount in {suggestedAsset.name} might grow to ₹
-          {suggestedAssetFutureValue}
-        </p>
-        <p className="mt-2">
-          Consider diversifying your portfolio by including{" "}
-          {suggestedAsset.name} to balance your risk and improve liquidity.
-        </p>
-      </div>
+      <button
+        className="w-full mt-6 bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded"
+        onClick={() =>
+          navigate("/detailed-comparison", {
+            state: { currentAsset, suggestedAsset },
+          })
+        }
+      >
+        Compare with Suggested Asset
+      </button>
     </div>
   );
 };
