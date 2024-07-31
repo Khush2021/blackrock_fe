@@ -8,9 +8,22 @@ const Input = () => {
   const [step, setStep] = useState(1);
   const [editingIndex, setEditingIndex] = useState(null);
   const [selectedState, setSelectedState] = useState("");
+  const [totalTime, setTotalTime] = useState("");
+  const [elapsedTime, setElapsedTime] = useState("");
+  const [city, setCity] = useState("");
+  const [area, setArea] = useState("");
 
   const navigate = useNavigate();
-  const availableAssets = ["gold", "silver", "real-estate", "cash"];
+  const availableAssets = ["gold", "real-estate", "cash", "fixed-deposit"];
+  const cities = [
+    "Ahmedabad",
+    "Bengaluru",
+    "Chennai",
+    "Delhi NCR",
+    "Hyderabad",
+    "Kolkata",
+    "Pune",
+  ];
 
   const goldStates = [
     "Uttar Pradesh",
@@ -58,6 +71,9 @@ const Input = () => {
   const handleAssetChange = (e) => {
     setAsset(e.target.value);
     setStep(2);
+    if (e.target.value === "real-estate") {
+      setAmount(""); // Ensure amount is reset if switching to real-estate
+    }
   };
 
   const handleAmountChange = (e) => {
@@ -68,13 +84,37 @@ const Input = () => {
     setSelectedState(e.target.value);
   };
 
+  const handleTotalTimeChange = (e) => {
+    setTotalTime(e.target.value);
+  };
+
+  const handleElapsedTimeChange = (e) => {
+    setElapsedTime(e.target.value);
+  };
+
+  const handleCityChange = (e) => {
+    setCity(e.target.value);
+  };
+
+  const handleAreaChange = (e) => {
+    setArea(e.target.value);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (parseFloat(amount) <= 0) {
-      alert("Amount must be greater than zero.");
+    if (asset !== "real-estate" && parseFloat(amount) <= 0) {
+      alert("Amount must be greater than zero for non-real estate assets.");
       return;
     }
-    const newSelection = { asset, amount, state: selectedState };
+    const newSelection = {
+      asset,
+      amount: asset !== "real-estate" ? amount : undefined, // Exclude amount for real estate
+      state: asset === "gold" ? selectedState : "",
+      totalTime: asset === "fixed-deposit" ? totalTime : "",
+      elapsedTime: asset === "fixed-deposit" ? elapsedTime : "",
+      city: asset === "real-estate" ? city : "",
+      area: asset === "real-estate" ? area : "",
+    };
     if (editingIndex !== null) {
       const updatedSelections = [...selections];
       updatedSelections[editingIndex] = newSelection;
@@ -86,6 +126,10 @@ const Input = () => {
     setAsset("");
     setAmount("");
     setSelectedState("");
+    setTotalTime("");
+    setElapsedTime("");
+    setCity("");
+    setArea("");
     setStep(1);
   };
 
@@ -94,6 +138,10 @@ const Input = () => {
     setAsset(selection.asset);
     setAmount(selection.amount);
     setSelectedState(selection.state || "");
+    setTotalTime(selection.totalTime || "");
+    setElapsedTime(selection.elapsedTime || "");
+    setCity(selection.city || "");
+    setArea(selection.area || "");
     setEditingIndex(index);
     setStep(2);
   };
@@ -105,6 +153,119 @@ const Input = () => {
 
   const handleAnalyze = () => {
     navigate("/analyse", { state: { assets: selections } });
+  };
+
+  const renderAssetSpecificFields = (
+    asset,
+    selectedState,
+    totalTime,
+    elapsedTime,
+    city
+  ) => {
+    if (asset === "gold") {
+      return (
+        <div className="mb-4">
+          <label
+            htmlFor="state-select"
+            className="block text-gray-800 text-sm font-bold mb-2"
+          >
+            Select State
+          </label>
+          <select
+            id="state-select"
+            value={selectedState}
+            onChange={handleStateChange}
+            className="block appearance-none w-full bg-gray-100 border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
+          >
+            <option value="">Select a state</option>
+            {goldStates.map((state) => (
+              <option key={state} value={state}>
+                {state}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
+    }
+    if (asset === "fixed-deposit") {
+      return (
+        <>
+          <div className="mb-4">
+            <label
+              htmlFor="total-time"
+              className="block text-gray-800 text-sm font-bold mb-2"
+            >
+              Total Time (in months)
+            </label>
+            <input
+              type="number"
+              id="total-time"
+              value={totalTime}
+              onChange={handleTotalTimeChange}
+              className="block appearance-none w-full bg-gray-100 border border-gray-400 hover:border-gray-500 px-4 py-2 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+          <div className="mb-4">
+            <label
+              htmlFor="elapsed-time"
+              className="block text-gray-800 text-sm font-bold mb-2"
+            >
+              Elapsed Time (in months)
+            </label>
+            <input
+              type="number"
+              id="elapsed-time"
+              value={elapsedTime}
+              onChange={handleElapsedTimeChange}
+              className="block appearance-none w-full bg-gray-100 border border-gray-400 hover:border-gray-500 px-4 py-2 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+        </>
+      );
+    }
+    if (asset === "real-estate") {
+      return (
+        <>
+          <div className="mb-4">
+            <label
+              htmlFor="city"
+              className="block text-gray-800 text-sm font-bold mb-2"
+            >
+              City
+            </label>
+            <select
+              id="city"
+              value={city}
+              onChange={handleCityChange}
+              className="block appearance-none w-full bg-gray-100 border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
+            >
+              <option value="">Select a city</option>
+              {cities.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mb-4">
+            <label
+              htmlFor="area"
+              className="block text-gray-800 text-sm font-bold mb-2"
+            >
+              Area (in sqft)
+            </label>
+            <input
+              type="number"
+              id="area"
+              value={area}
+              onChange={handleAreaChange}
+              className="block appearance-none w-full bg-gray-100 border border-gray-400 hover:border-gray-500 px-4 py-2 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+        </>
+      );
+    }
+    return null;
   };
 
   return (
@@ -138,45 +299,12 @@ const Input = () => {
               </select>
             </div>
           )}
-          {step === 2 && asset === "gold" && (
-            <div className="mb-4">
-              <label
-                htmlFor="state-select"
-                className="block text-gray-800 text-sm font-bold mb-2"
-              >
-                Select State
-              </label>
-              <select
-                id="state-select"
-                value={selectedState}
-                onChange={handleStateChange}
-                className="block appearance-none w-full bg-gray-100 border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
-              >
-                <option value="">Select a state</option>
-                {goldStates.map((state) => (
-                  <option key={state} value={state}>
-                    {state}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          {step === 2 && (
-            <div className="mb-4">
-              <label
-                htmlFor="amount"
-                className="block text-gray-800 text-sm font-bold mb-2"
-              >
-                Enter Amount ({getUnitType(asset)})
-              </label>
-              <input
-                type="number"
-                id="amount"
-                value={amount}
-                onChange={handleAmountChange}
-                className="block appearance-none w-full bg-gray-100 border border-gray-400 hover:border-gray-500 px-4 py-2 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
-              />
-            </div>
+          {renderAssetSpecificFields(
+            asset,
+            selectedState,
+            totalTime,
+            elapsedTime,
+            city
           )}
           <button
             type="submit"
@@ -208,6 +336,14 @@ const Input = () => {
                       selection.asset.slice(1)}{" "}
                     : {selection.amount} {getUnitType(selection.asset)}{" "}
                     {selection.state ? `(${selection.state})` : ""}
+                    {selection.totalTime
+                      ? ` - Total Time: ${selection.totalTime} months`
+                      : ""}
+                    {selection.elapsedTime
+                      ? ` - Elapsed Time: ${selection.elapsedTime} months`
+                      : ""}
+                    {selection.city ? ` - City: ${selection.city}` : ""}
+                    {selection.area ? ` - Area: ${selection.area} sqft` : ""}
                   </div>
                   <div>
                     <button
@@ -237,8 +373,9 @@ const Input = () => {
 
 function getUnitType(asset) {
   if (asset === "gold") return "grams";
-  if (asset === "real-estate") return "units";
+  if (asset === "real-estate") return "sqft";
   if (asset === "cash") return "INR";
+  if (asset === "fixed-deposit") return "INR";
   return "";
 }
 
