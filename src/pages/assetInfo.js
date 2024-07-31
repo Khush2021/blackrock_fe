@@ -153,10 +153,6 @@ export const tooltipContent = {
         value: "High",
         details: "Sale process can take months.",
       },
-      useEffect(() => {
-    getInvestmentAdvice();
-  }, [risk, liquidity]);
-
     ],
     risk: [
       {

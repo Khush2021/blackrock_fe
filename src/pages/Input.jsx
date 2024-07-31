@@ -4,16 +4,13 @@ import { useNavigate } from "react-router-dom";
 const Input = () => {
   const [asset, setAsset] = useState("");
   const [amount, setAmount] = useState("");
-  const [principal, setPrincipal] = useState("");
-  const [totalTerm, setTotalTerm] = useState("");
-  const [elapsedTerm, setElapsedTerm] = useState("");
   const [selections, setSelections] = useState([]);
   const [step, setStep] = useState(1);
   const [editingIndex, setEditingIndex] = useState(null);
   const [selectedState, setSelectedState] = useState("");
 
   const navigate = useNavigate();
-  const availableAssets = ["Gold", "Fixed Deposits", "Real-Estate", "Cash"];
+  const availableAssets = ["gold", "silver", "real-estate", "cash"];
 
   const goldStates = [
     "Uttar Pradesh",
@@ -67,41 +64,17 @@ const Input = () => {
     setAmount(e.target.value);
   };
 
-  const handlePrincipalChange = (e) => {
-    setPrincipal(e.target.value);
-  };
-
-  const handleTotalTermChange = (e) => {
-    setTotalTerm(e.target.value);
-  };
-
-  const handleElapsedTermChange = (e) => {
-    setElapsedTerm(e.target.value);
-  };
-
   const handleStateChange = (e) => {
     setSelectedState(e.target.value);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (parseFloat(amount) <= 0 && asset !== "Fixed Deposits") {
+    if (parseFloat(amount) <= 0) {
       alert("Amount must be greater than zero.");
       return;
     }
-    if (
-      asset === "Fixed Deposits" &&
-      (parseFloat(principal) <= 0 ||
-        parseFloat(totalTerm) <= 0 ||
-        parseFloat(elapsedTerm) < 0)
-    ) {
-      alert("Please provide valid inputs for fixed deposits.");
-      return;
-    }
-    const newSelection =
-      asset === "Fixed Deposits"
-        ? { asset, principal, totalTerm, elapsedTerm }
-        : { asset, amount, state: selectedState };
+    const newSelection = { asset, amount, state: selectedState };
     if (editingIndex !== null) {
       const updatedSelections = [...selections];
       updatedSelections[editingIndex] = newSelection;
@@ -112,9 +85,6 @@ const Input = () => {
     }
     setAsset("");
     setAmount("");
-    setPrincipal("");
-    setTotalTerm("");
-    setElapsedTerm("");
     setSelectedState("");
     setStep(1);
   };
@@ -122,14 +92,8 @@ const Input = () => {
   const handleEdit = (index) => {
     const selection = selections[index];
     setAsset(selection.asset);
-    if (selection.asset === "Fixed Deposits") {
-      setPrincipal(selection.principal);
-      setTotalTerm(selection.totalTerm);
-      setElapsedTerm(selection.elapsedTerm);
-    } else {
-      setAmount(selection.amount);
-      setSelectedState(selection.state || "");
-    }
+    setAmount(selection.amount);
+    setSelectedState(selection.state || "");
     setEditingIndex(index);
     setStep(2);
   };
@@ -197,7 +161,7 @@ const Input = () => {
               </select>
             </div>
           )}
-          {step === 2 && asset !== "Fixed Deposits" && (
+          {step === 2 && (
             <div className="mb-4">
               <label
                 htmlFor="amount"
@@ -213,55 +177,6 @@ const Input = () => {
                 className="block appearance-none w-full bg-gray-100 border border-gray-400 hover:border-gray-500 px-4 py-2 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
               />
             </div>
-          )}
-          {step === 2 && asset === "Fixed Deposits" && (
-            <>
-              <div className="mb-4">
-                <label
-                  htmlFor="principal"
-                  className="block text-gray-800 text-sm font-bold mb-2"
-                >
-                  Enter Principal Amount (INR)
-                </label>
-                <input
-                  type="number"
-                  id="principal"
-                  value={principal}
-                  onChange={handlePrincipalChange}
-                  className="block appearance-none w-full bg-gray-100 border border-gray-400 hover:border-gray-500 px-4 py-2 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="total-term"
-                  className="block text-gray-800 text-sm font-bold mb-2"
-                >
-                  Enter Total Term (months)
-                </label>
-                <input
-                  type="number"
-                  id="total-term"
-                  value={totalTerm}
-                  onChange={handleTotalTermChange}
-                  className="block appearance-none w-full bg-gray-100 border border-gray-400 hover:border-gray-500 px-4 py-2 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="elapsed-term"
-                  className="block text-gray-800 text-sm font-bold mb-2"
-                >
-                  Enter Elapsed Term (months)
-                </label>
-                <input
-                  type="number"
-                  id="elapsed-term"
-                  value={elapsedTerm}
-                  onChange={handleElapsedTermChange}
-                  className="block appearance-none w-full bg-gray-100 border border-gray-400 hover:border-gray-500 px-4 py-2 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-            </>
           )}
           <button
             type="submit"
@@ -291,10 +206,7 @@ const Input = () => {
                   <div>
                     {selection.asset.charAt(0).toUpperCase() +
                       selection.asset.slice(1)}{" "}
-                    : {selection.amount || selection.principal}{" "}
-                    {selection.asset === "Fixed Deposits"
-                      ? `Principal, Total Term: ${selection.totalTerm} months, Elapsed Term: ${selection.elapsedTerm} months`
-                      : getUnitType(selection.asset)}{" "}
+                    : {selection.amount} {getUnitType(selection.asset)}{" "}
                     {selection.state ? `(${selection.state})` : ""}
                   </div>
                   <div>
